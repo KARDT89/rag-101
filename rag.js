@@ -9,62 +9,116 @@ import { QdrantVectorStore } from "@langchain/qdrant";
 configDotenv()
 
 const llm = new ChatOllama({
-    baseUrl: "http://localhost:11434", // Default Ollama URL
-    model: "tinyllama", // You can use llama3, mistral, or other models
+    baseUrl: "http://localhost:11434", 
+    model: "gemma:2b", 
     temperature: 0,
 });
 
 
 const embeddingModel = new OllamaEmbeddings({
-    baseUrl: "http://localhost:11434", // Default Ollama URL
-    model: "nomic-embed-text", // A good embedding model in Ollama
+    baseUrl: "http://localhost:11434", 
+    model: "nomic-embed-text", 
 });
 
-const qdrantConfig = {
-    url: process.env.QDRANT_URL || "http://localhost:6333",
-    collectionName: "dt89_collection",
-};
 
-export async function langchain(text){
-    const path = "./temp.txt";
+export async function langchain(text, chatId) {
+    try {
+        const path = "./temp.txt";
+        await fs.writeFile(path, text);
 
-    await fs.writeFile(path, text);
+        const loader = new TextLoader(path); // Load the file
+        const docs = await loader.load();
+        
+        const splitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 500, // Increased chunk size for better context
+            chunkOverlap: 50, // Increased overlap to maintain context between chunks
+        });
+        const split_text = await splitter.splitDocuments(docs)
 
-    const loader = new TextLoader(path);
-    const docs = await loader.load();
-    
-    const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 100,
-        chunkOverlap: 10,
-      });
-    const split_text = await splitter.createDocuments([text]);
-    
-    // Generate embeddings
-    const vectorStore = await QdrantVectorStore.fromDocuments(
-        split_text,
-        embeddingModel,
-        qdrantConfig
-    );
-    console.log("Ingestion Done")
-    
+        const qdrantConfig = {
+            url: process.env.QDRANT_URL || "http://localhost:6333",
+            collectionName: `letsgo-${chatId}`,
+        };
+        
+        // Generate embeddings and store in Qdrant
+        await QdrantVectorStore.fromDocuments(
+            split_text,
+            embeddingModel,
+            qdrantConfig
+        );
+        
+        
+        console.log(`Ingestion complete: ${split_text.length} chunks processed`);
+        return { success: true, chunks: split_text.length };
+
+    } catch (error) {
+        console.error("Error during ingestion:", error);
+        throw error;
+    }
 }
 
-async function rag(query) {
-    const vectorStore = await QdrantVectorStore.fromExistingCollection(
-        embeddingModel,
-        qdrantConfig
-      );
+export async function rag(query, chatId) {
+    try{
+        const qdrantConfig = {
+            url: process.env.QDRANT_URL || "http://localhost:6333",
+            collectionName: `letsgo-${chatId}`,
+        };
 
-    const results = await vectorStore.similaritySearch(query, 3);
-    console.log("Search results:");
-    results.forEach((doc, i) => {
-        console.log(`Result ${i + 1}:\n`, doc.pageContent);
-    });
+        const vectorStore = await QdrantVectorStore.fromExistingCollection(
+            embeddingModel,
+            qdrantConfig
+          );
+    
+        const results = await vectorStore.similaritySearch(query, 5);
+        
+        console.log("Search results:");
+        results.forEach((doc, i) => {
+            console.log(`Result ${i + 1}:\n`, doc.pageContent);
+        });
+    
+        const context = results.map((r) => r.pageContent).join("\n");
+        
+        const prompt = `You are a helpful AI assistant with deep analytical capabilities.
 
-    const context = results.map((r) => r.pageContent).join("\n");
-    const response = await llm.invoke(`Answer this: "${query}" based on the following context:\n${context}`);
+                        CONTEXT INFORMATION:
+                        """
+                        ${context}
+                        """
 
-    return response.content
+                        USER QUERY: "${query}"
+
+                        Instructions:
+                        0. Format it for Professional use.
+                        1. Analyze the context carefully and extract relevant information to address the query
+                        2. Keep it simple and to the point.
+                        3. Add humor to your answers ocationally.
+                        4. If you dont have context to the answer just say "I dont have context". Don't hallucinate.
+                        5. Write a detailed, professional, and well-structured response on ${query}, 
+                        formatted with clean Markdown. The tone should be expert yet approachable, 
+                        Occasionally (but sparingly), include well-placed emojis to enhance engagement without undermining the professional tone. 
+                        Avoid overly casual language, but keep it human.
+
+                        Remember: Quality over quantity. Precision is more important than length.
+
+                        Example: 
+                        Context: "My name is Tamal Sarkar! I love to code and play videogames!"
+
+                        User query: "Who's Better Messi or Ronaldo?"
+                        response: "I dont have context to answer that"
+                        
+                        User query: "Hi chat!"
+                        response: "Hey Tamal! How can I help you?"
+                        `;
+        
+        const response = await llm.invoke(prompt);
+
+        return response.content
+
+    } catch (error) {
+        console.error("Error during RAG:", error);
+        throw error;
+    }
+    
 }
 
 

@@ -1,35 +1,228 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Chat</title>
-  <script>
-    async function sendMessage() {
-      const message = document.getElementById("message").value;
-      const chatId = "<%= chatId %>";
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ message, chatId })
-      });
-      const data = await res.json();
-      const chatBox = document.getElementById("chat");
-      chatBox.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
-      chatBox.innerHTML += `<p><strong>AI:</strong> ${data.response}</p>`;
-      document.getElementById("message").value = "";
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context-Based Chat</title>
+  <!-- Bootstrap CSS from CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      padding: 2rem 0;
+      min-height: 100vh;
     }
-  </script>
+    .chat-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #212529;
+      border-radius: 10px;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+    }
+    .page-title {
+      color: #0dcaf0;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+    .chat-id {
+      color: #6c757d;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    #chat {
+      height: 70vh;
+      overflow-y: auto;
+      padding: 1rem;
+      border-radius: 6px;
+      background-color: #2b3035;
+      border: 1px solid #495057;
+      margin-bottom: 1.5rem;
+      flex-grow: 1;
+    }
+    .form-control {
+      background-color: #2b3035;
+      border-color: #495057;
+      color: #e0e0e0;
+    }
+    .form-control:focus {
+      background-color: #2b3035;
+      color: #e0e0e0;
+      border-color: #0dcaf0;
+      box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+    }
+    .btn-primary {
+      background-color: #0dcaf0;
+      border-color: #0dcaf0;
+      color: #212529;
+    }
+    .btn-primary:hover {
+      background-color: #0bacce;
+      border-color: #0bacce;
+    }
+    .message {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+    }
+    .user-message {
+      background-color: #343a40;
+      margin-left: 2rem;
+      margin-right: 0.5rem;
+      text-align: right;
+    }
+    .ai-message {
+      background-color: #0d6efd;
+      margin-right: 2rem;
+      margin-left: 0.5rem;
+    }
+    .sender {
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+    .user-sender {
+      color: #0dcaf0;
+    }
+    .ai-sender {
+      color: white;
+    }
+    .message-content {
+      word-wrap: break-word;
+    }
+    .input-area {
+      margin-top: auto;
+    }
+  </style>
 </head>
 <body>
-  <h1>Context-Based Chat</h1>
-  <div>
-    <strong>Context:</strong>
-    <pre><%= context %></pre>
+  <div class="container h-100">
+    <div class="chat-container">
+      <h1 class="page-title text-center">Context-Based Chat</h1>
+      <h6 class="chat-id text-center">Chat ID: <%= chatId %></h6>
+      
+      <div id="chat"></div>
+      
+      <div class="input-area">
+        <div class="input-group">
+          <input 
+            type="text" 
+            class="form-control" 
+            id="message" 
+            placeholder="Ask a question..." 
+            aria-label="Message"
+            aria-describedby="send-button">
+          <button 
+            class="btn btn-primary" 
+            type="button" 
+            id="send-button"
+            onclick="sendMessage()">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="chat" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll;">
-  </div>
-  <input id="message" type="text" placeholder="Ask a question..." />
-  <button onclick="sendMessage()">Send</button>
+  
+  <!-- Bootstrap JS from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Add event listener for Enter key
+    document.getElementById("message").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+    
+    async function sendMessage() {
+      const messageInput = document.getElementById("message");
+      const message = messageInput.value.trim();
+      
+      if (!message) return;
+      
+      const chatId = "<%= chatId %>";
+      const chatBox = document.getElementById("chat");
+      
+      // Add user message with styled bubble
+      const userMessageDiv = document.createElement("div");
+      userMessageDiv.className = "message user-message";
+      userMessageDiv.innerHTML = `
+        <div class="sender user-sender">You</div>
+        <div class="message-content">${escapeHTML(message)}</div>
+      `;
+      chatBox.appendChild(userMessageDiv);
+      
+      // Clear input and scroll to bottom
+      messageInput.value = "";
+      chatBox.scrollTop = chatBox.scrollHeight;
+      
+      try {
+        // Show loading indicator
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "message ai-message";
+        loadingDiv.innerHTML = `
+          <div class="sender ai-sender">AI</div>
+          <div class="message-content">Thinking...</div>
+        `;
+        chatBox.appendChild(loadingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message, chatId })
+        });
+        
+        // Remove loading indicator
+        chatBox.removeChild(loadingDiv);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        // Add AI response with styled bubble
+        const aiMessageDiv = document.createElement("div");
+        aiMessageDiv.className = "message ai-message";
+        aiMessageDiv.innerHTML = `
+          <div class="sender ai-sender">AI</div>
+          <div class="message-content">${escapeHTML(data.response)}</div>
+        `;
+        chatBox.appendChild(aiMessageDiv);
+        
+      } catch (error) {
+        console.error("Error:", error);
+        
+        // Show error message
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "message ai-message";
+        errorDiv.innerHTML = `
+          <div class="sender ai-sender">System</div>
+          <div class="message-content">Sorry, there was an error processing your request. Please try again.</div>
+        `;
+        chatBox.appendChild(errorDiv);
+      }
+      
+      // Scroll to bottom
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
+    // Helper function to escape HTML
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
 </body>
 </html>

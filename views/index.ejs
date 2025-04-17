@@ -1,14 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload Context</title>
+  <!-- Bootstrap CSS from CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      padding-top: 2rem;
+      color: #e0e0e0;
+    }
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #212529;
+      border-radius: 10px;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
+    }
+    .page-title {
+      color: #0dcaf0;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+    .form-control {
+      background-color: #2b3035;
+      border-color: #495057;
+      color: #e0e0e0;
+    }
+    .form-control:focus {
+      background-color: #2b3035;
+      color: #e0e0e0;
+      border-color: #0dcaf0;
+      box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+    }
+    .form-control::placeholder {
+      color: #6c757d;
+    }
+    .btn-primary {
+      background-color: #0dcaf0;
+      border-color: #0dcaf0;
+      color: #212529;
+    }
+    .btn-primary:hover {
+      background-color: #0bacce;
+      border-color: #0bacce;
+      color: #212529;
+    }
+  </style>
 </head>
 <body>
-  <h1>Enter Context</h1>
-  <form action="/chat" method="POST">
-    <textarea name="context" rows="10" cols="80" placeholder="Paste your context here..."></textarea>
-    <br>
-    <button type="submit">Start Chat</button>
-  </form>
+  <div class="container">
+    <div class="form-container">
+      <h1 class="page-title text-center">Enter Context</h1>
+      <form action="/chat" method="POST">
+        <div class="mb-4">
+          <textarea 
+            class="form-control" 
+            name="context" 
+            rows="10" 
+            placeholder="Paste your context here..."
+            style="resize: vertical;"></textarea>
+        </div>
+        <div class="d-grid gap-2 col-6 mx-auto">
+          <button type="submit" class="btn btn-primary btn-lg">
+            Start Chat
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Bootstrap JS from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

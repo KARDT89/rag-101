@@ -1,0 +1,35 @@
+{
+  "name": "rag-101",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KARDT89/rag-101.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KARDT89/rag-101/issues"
+  },
+  "homepage": "https://github.com/KARDT89/rag-101#readme",
+  "dependencies": {
+    "@langchain/core": "^0.3.45",
+    "@langchain/google-genai": "^0.2.4",
+    "@langchain/google-vertexai": "^0.2.4",
+    "@langchain/ollama": "^0.2.0",
+    "@langchain/qdrant": "^0.1.2",
+    "body-parser": "^2.2.0",
+    "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "langchain": "^0.3.22",
+    "nodemon": "^3.1.9"
+  }
+}

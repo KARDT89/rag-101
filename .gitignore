@@ -1,0 +1,4 @@
+.env
+node_modules
+qdrant_data
+ollama_models

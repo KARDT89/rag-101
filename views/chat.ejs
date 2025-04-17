@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat</title>
+  <script>
+    async function sendMessage() {
+      const message = document.getElementById("message").value;
+      const chatId = "<%= chatId %>";
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message, chatId })
+      });
+      const data = await res.json();
+      const chatBox = document.getElementById("chat");
+      chatBox.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
+      chatBox.innerHTML += `<p><strong>AI:</strong> ${data.response}</p>`;
+      document.getElementById("message").value = "";
+    }
+  </script>
+</head>
+<body>
+  <h1>Context-Based Chat</h1>
+  <div>
+    <strong>Context:</strong>
+    <pre><%= context %></pre>
+  </div>
+  <div id="chat" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll;">
+  </div>
+  <input id="message" type="text" placeholder="Ask a question..." />
+  <button onclick="sendMessage()">Send</button>
+</body>
+</html>
